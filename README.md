@@ -279,15 +279,7 @@ The prediction model is an **XGBoost binary classifier** that predicts whether a
 - The model considers historical patterns and current form
 - Probability scores indicate confidence in podium finish
 
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit issues or pull requests.
-
-## 📝 License
-
-This project is for educational and demonstration purposes.
-
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - **FastF1** for providing real-time F1 data access
 - Historical F1 data from Ergast API datasets
