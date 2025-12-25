@@ -7,26 +7,58 @@ def load_feature_store():
     return pd.read_parquet(FEATURE_PATH)
 
 
-def get_driver_past_stats(driver_id: int, year: int, n: int = 5):
-
+def get_driver_past_stats(driver_id: int, season: int, round_number: int, n: int = 5):
     df = load_feature_store()
-    past = df[(df['driverId'] == driver_id) & (df['year'] < year)].sort_values('year', ascending=False).head(n)
-    print("this is driver df",df,"\n")
-    print("this is driver past",past,"\n")
+
+    mask = (
+        (df['driverId'] == driver_id) &
+        (
+            (df['year'] < season) |
+            ((df['year'] == season) & (df['round'] < round_number))
+        )
+    )
+
+    past = df.loc[mask].sort_values(['year', 'round'])
+
+    if past.empty:
+        return {
+            "prev_finish": 10,
+            "avg_finish": 10,
+            "podium_rate": 0.0,
+        }
+
+    last_n = past.tail(n)
+
     return {
-        "prev_finish": past['positionOrder'].iloc[0] if len(past) > 0 else 10,
-        "avg_finish": past['positionOrder'].mean() if len(past) > 0 else 10,
-        "podium_rate": past['podium'].mean() if len(past) > 0 else 0.0,
+        "prev_finish": float(last_n['positionOrder'].iloc[-1]),
+        "avg_finish": float(last_n['positionOrder'].mean()),
+        "podium_rate": float(last_n['podium'].mean()),
     }
 
-
-def get_constructor_past_stats(constructor_id: int, year: int, n: int = 5):
+def get_constructor_past_stats(constructor_id: int, season: int, round_number: int):
     df = load_feature_store()
-    past = df[(df['constructorId'] == constructor_id) & (df['year'] < year)].sort_values('year', ascending=False).head(n)
-    print("this is constructor df",df,"\n")
-    print("this is constructor past",past,"\n")
+
+    mask = (
+        (df['constructorId'] == constructor_id) &
+        (
+            (df['year'] < season) |
+            ((df['year'] == season) & (df['round'] < round_number))
+        )
+    )
+
+    past = df.loc[mask].sort_values(['year', 'round'])
+
+    if past.empty:
+        return {
+            "prev_finish": 10,
+            "avg_finish": 10,
+            "podium_rate": 0.0,
+        }
+
+    last_row = past.iloc[-1]
+
     return {
-        "prev_finish": past['constructor_prev_avg_finish'].iloc[0] if len(past) > 0 else 10,
-        "avg_finish": past['constructor_rolling_avg_finish'].mean() if len(past) > 0 else 10,
-        "podium_rate": past['constructor_rolling_podium_rate'].mean() if len(past) > 0 else 0.0,
+        "prev_finish": float(last_row['constructor_prev_avg_finish']),
+        "avg_finish": float(last_row['constructor_rolling_avg_finish']),
+        "podium_rate": float(last_row['constructor_rolling_podium_rate']),
     }

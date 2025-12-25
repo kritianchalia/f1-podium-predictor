@@ -1,5 +1,3 @@
-
-
 from fastapi import FastAPI
 from data_pipeline.fastf1_client import get_quali_results
 from data_pipeline.feature_store import load_feature_store, get_driver_past_stats, get_constructor_past_stats
@@ -17,19 +15,35 @@ def predict_podium(req: RaceRequest):
     season = req.season
     race_name = req.race_name
     # Pull quali results
-    quali_df = get_quali_results(season, race_name)
-
+    quali_df,round_number = get_quali_results(season, race_name)
     # merge with feature store to get driver & constructor IDs
     feature_store_df = load_feature_store()
-    merged = feature_store_df.merge(quali_df[['DriverNumber', 'FullName', 'qualifying_position', 'Q1', 'Q2', 'Q3']],
-                            on="FullName",
-                            how="left")
+    feature_store_df = feature_store_df[feature_store_df['year'] == season]
+    feature_store_drivers = (
+    feature_store_df.sort_values('round')
+    .groupby('driverId')
+    .tail(1)        # latest round
+    )
+
+    merged = quali_df.merge(
+    feature_store_drivers[['driverId', 'constructorId', 'FullName']],
+    how="left",
+    left_on="FullName",
+    right_on="FullName"
+    )
+
+    # Inspect / guard against missing IDs
+    # missing = merged[merged['driverId'].isna() | merged['constructorId'].isna()]
+    # if not missing.empty:
+    #     print("WARNING: missing driverId/constructorId for these drivers:")
+    #     print(missing[['FullName', 'qualifying_position']])
+
+    #     merged = merged.dropna(subset=['driverId', 'constructorId'])
     print("this is merged",merged)
     results = []
     for _, row in merged.iterrows():
-        print("this is row",row)
-        driver_stats = get_driver_past_stats(row['driverId'], season)
-        constructor_stats = get_constructor_past_stats(row['constructorId'], season)
+        driver_stats = get_driver_past_stats(row['driverId'],round_number, season)
+        constructor_stats = get_constructor_past_stats(row['constructorId'],round_number, season)
 
         features = build_feature_vector(
             quali_position=row['qualifying_position'],
