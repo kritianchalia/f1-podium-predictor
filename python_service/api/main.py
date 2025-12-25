@@ -1,3 +1,4 @@
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
 from data_pipeline.fastf1_client import get_quali_results
 from data_pipeline.feature_store import load_feature_store, get_driver_past_stats, get_constructor_past_stats
@@ -6,6 +7,19 @@ from model.inference import predict_prob
 from pydantic import BaseModel
 
 app = FastAPI()
+# Allow the frontend dev server to talk to this API
+origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],          
+    allow_credentials=False,      
+    allow_methods=["*"],          
+    allow_headers=["*"],          
+)
 class RaceRequest(BaseModel):
     season: int
     race_name: str
