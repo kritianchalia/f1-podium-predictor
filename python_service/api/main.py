@@ -46,13 +46,6 @@ def predict_podium(req: RaceRequest):
     right_on="FullName"
     )
 
-    # Inspect / guard against missing IDs
-    # missing = merged[merged['driverId'].isna() | merged['constructorId'].isna()]
-    # if not missing.empty:
-    #     print("WARNING: missing driverId/constructorId for these drivers:")
-    #     print(missing[['FullName', 'qualifying_position']])
-
-    #     merged = merged.dropna(subset=['driverId', 'constructorId'])
     print("this is merged",merged)
     results = []
     for _, row in merged.iterrows():
